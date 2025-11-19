@@ -15,27 +15,29 @@ function DeckForm({ onCreated }) {
   const [values, setValues] = useState(defaultValues)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setValues((v) => ({ ...v, [name]: value }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const submitPayload = async (payload) => {
     setLoading(true)
     setError('')
+    setSuccess('')
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
       const res = await fetch(`${baseUrl}/api/decks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const data = await res.json()
       onCreated?.(data.deck)
       setValues(defaultValues)
+      setSuccess('Deck created successfully')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -43,11 +45,39 @@ function DeckForm({ onCreated }) {
     }
   }
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!values.name) {
+      setError('Please enter a name for your company or product')
+      return
+    }
+    await submitPayload(values)
+  }
+
+  const handleQuickGenerate = async () => {
+    const sample = {
+      name: 'Acme AI',
+      industry: 'Fintech',
+      audience: 'seed investors',
+      tone: 'visionary',
+      problem: 'SMBs spend hours reconciling payments across banks, PSPs, and ledgers with error-prone spreadsheets.',
+      solution: 'Automated reconciliation, risk scoring, and ledger sync powered by AI.',
+      market: '10M+ SMBs processing $500B+/yr online with growing cross-border volume.',
+      traction: 'Design partners processing $2M/mo, 35% MoM pipeline growth.',
+    }
+    await submitPayload(sample)
+  }
+
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-4">
       {error && (
         <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
           {error}
+        </div>
+      )}
+      {success && (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+          {success}
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -94,6 +124,9 @@ function DeckForm({ onCreated }) {
       <div className="flex items-center gap-3">
         <button disabled={loading} className="rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 px-4 py-2 font-medium text-slate-900 transition-colors">
           {loading ? 'Generating…' : 'Generate Deck'}
+        </button>
+        <button type="button" disabled={loading} onClick={handleQuickGenerate} className="rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 px-4 py-2 text-sm text-white">
+          {loading ? 'Please wait…' : 'Quick Generate (Sample)'}
         </button>
         <span className="text-xs text-slate-400">Data is saved automatically</span>
       </div>

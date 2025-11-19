@@ -38,19 +38,22 @@ function DeckItem({ deck }) {
   )
 }
 
-function DeckList() {
+function DeckList({ refreshKey = 0 }) {
   const [decks, setDecks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const loadDecks = async () => {
     setLoading(true)
+    setError('')
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
       const res = await fetch(`${baseUrl}/api/decks`)
+      if (!res.ok) throw new Error(`Failed to load decks: ${res.status}`)
       const data = await res.json()
       setDecks(data.decks || [])
     } catch (e) {
-      console.error(e)
+      setError(e.message)
     } finally {
       setLoading(false)
     }
@@ -58,7 +61,8 @@ function DeckList() {
 
   useEffect(() => {
     loadDecks()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey])
 
   return (
     <div className="space-y-4">
@@ -66,6 +70,7 @@ function DeckList() {
         <h2 className="text-white font-semibold">Your Decks</h2>
         <button onClick={loadDecks} className="text-sm text-emerald-400 hover:text-emerald-300">Refresh</button>
       </div>
+      {error && (<div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">{error}</div>)}
       {loading ? (
         <div className="text-slate-400 text-sm">Loading…</div>
       ) : decks.length === 0 ? (
